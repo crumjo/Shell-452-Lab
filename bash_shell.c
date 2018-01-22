@@ -1,3 +1,12 @@
+/*
+ * A shell programmed to use the system calls fork(),
+ * execvp(), and wait(). Typing 'quit' exits the
+ * program.
+ *
+ * @authors Dylan Shoup & Joshua Crum
+ * @version 1/25/18
+ */
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -5,26 +14,35 @@
 #include <sys/wait.h>
 #include <string.h>
 
-int main(int argc, char* argv[]){
+
+int main(int argc, char* argv[]) {
 	pid_t pid;
 	char input[32];
 	char* word[16];
 	char* buf;
-	int i,j;
-	while(strcmp(input,"quit")!=0){
-		i=0;
-		fgets(input,16,stdin);
+	int i, j;
+    
+	while(1) {
+		i = 0;
+		fgets(input, 16, stdin);
 		
+        /* Run until user types 'quit'. */
+        if(strcmp(input, "quit\n") == 0) {
+            return 0;
+        }
+        
+        /* Tokenize user input. */
 		buf = strtok(input, " \n");
 		for(j = 0; j < 16; j++){
 			word[j] = NULL;
-		}	
-		while(buf!=NULL){
+		}
+        
+		while(buf != NULL) {
 			word[i] = buf;
 			buf = strtok(NULL, " \n");
 			i++;
 		}
-		word[i+1] = NULL;
+		word[i + 1] = NULL;
 		
 		if((pid = fork()) < 0){
 			perror("Fork Failure");
