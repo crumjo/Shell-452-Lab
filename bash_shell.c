@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <string.h>
+#include <time.h>
 
 
 int main(int argc, char* argv[]) {
@@ -55,9 +56,13 @@ int main(int argc, char* argv[]) {
 			}
 			exit(0);
 		}
-		else{
-			wait(0);
-		}
+		else{ //FIX ME not sure if this is where it goes
+			int start = clock();
+            wait(0);
+		    int end = clock();
+            double total = (double)(end - start) / CLOCKS_PER_SEC;
+            printf("Time taken: %f\n", total); 
+        }
 	}
 	return 0;
 }
