@@ -13,7 +13,8 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <string.h>
-#include <time.h>
+//#include <time.h>
+#include <sys/resource.h>
 
 
 int main(int argc, char* argv[]) {
@@ -21,8 +22,12 @@ int main(int argc, char* argv[]) {
 	char input[32];
 	char* word[16];
 	char* buf;
-	int i, j;
-    
+	int i, j, status;
+    	struct rusage use;
+	long totalsw, sw, totalt, time;
+
+	totalsw =0;
+	totalt = 0;
 	while(1) {
 		i = 0;
 		fgets(input, 16, stdin);
@@ -57,12 +62,17 @@ int main(int argc, char* argv[]) {
 			exit(0);
 		}
 		else{ //FIX ME not sure if this is where it goes
-			int start = clock();
-            wait(0);
-		    int end = clock();
-            double total = (double)(end - start) / CLOCKS_PER_SEC;
-            printf("Time taken: %f\n", total); 
-        }
+            		waitpid(-1, &status, 0 );
+			getrusage(RUSAGE_CHILDREN, &use);//Get child usage.
+
+            		time = use.ru_utime.tv_usec - totalt;
+			totalt = use.ru_utime.tv_usec;
+            		printf("Time taken (microseconds): %ld\n", time);
+
+			sw = use.ru_nivcsw - totalsw;
+			totalsw = use.ru_nivcsw;
+			printf("Switches: %ld\n", sw); 
+		}
 	}
 	return 0;
 }
