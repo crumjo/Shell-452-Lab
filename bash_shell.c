@@ -13,66 +13,89 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <string.h>
-//#include <time.h>
 #include <sys/resource.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 
 
 int main(int argc, char* argv[]) {
-	pid_t pid;
-	char input[32];
-	char* word[16];
-	char* buf;
-	int i, j, status;
-    	struct rusage use;
-	long totalsw, sw, totalt, time;
-
-	totalsw =0;
-	totalt = 0;
-	while(1) {
-		i = 0;
-		fgets(input, 16, stdin);
-		
-        /* Run until user types 'quit'. */
-        if(strcmp(input, "quit\n") == 0) {
-            return 0;
+    pid_t pid;
+    //char input[32];
+    char *input = (char*) malloc (32 * sizeof(char));
+    char* word[16];
+    char* buf;
+    int i, j, status;
+    struct rusage use;
+    long totalsw, sw, totalt, time;
+    static char *line_read = (char *)NULL;
+    totalsw =0;
+    totalt = 0;
+    
+    /* Bind tab to autocomplete. */
+    rl_bind_key('\t', rl_complete);
+    
+    while(1) {
+        
+        /* Make sure it is not alread allocated. */
+        if (line_read) {
+            free (line_read);
+            line_read = (char *)NULL;
         }
         
-        /* Tokenize user input. */
-		buf = strtok(input, " \n");
-		for(j = 0; j < 16; j++){
-			word[j] = NULL;
-		}
+        i = 0;
+        input = readline("");
         
-		while(buf != NULL) {
-			word[i] = buf;
-			buf = strtok(NULL, " \n");
-			i++;
-		}
-		word[i + 1] = NULL;
-		
-		if((pid = fork()) < 0){
-			perror("Fork Failure");
-			exit(1);
-		}
-		else if(pid == 0){
-			if(execvp(word[0], word) < 0){
-				perror("Exec Failed");
-				exit(1);
-			}
-			exit(0);
-		}
-		else{ //FIX ME not sure if this is where it goes
-            		waitpid(-1, &status, 0 );
-			getrusage(RUSAGE_CHILDREN, &use);//Get child usage.
+        /* Run until user types 'quit'. */
+        if(strcmp(input, "quit") == 0) {
+            free(input);
+            return 0;
+        }
 
-            		time = use.ru_utime.tv_usec - totalt;
-			totalt = use.ru_utime.tv_usec;
-            		printf("Time taken (microseconds): %ld\n", time);
+        /* Tokenize user input. */
+        buf = strtok(input, " \n");
+        for(j = 0; j < 16; j++){
+            word[j] = NULL;
+        }
 
-			sw = use.ru_nivcsw - totalsw;
-			totalsw = use.ru_nivcsw;
-			printf("Switches: %ld\n", sw); 
-		}
-	}
-	return 0;
+        while(buf != NULL) {
+            word[i] = buf;
+            buf = strtok(NULL, " \n");
+            i++;
+        }
+        word[i + 1] = NULL;
+
+        /* Check for fork() error. */
+        if((pid = fork()) < 0){
+            perror("Fork Failure");
+            free(input);
+            exit(1);
+        }
+
+        /* Child branch. */
+        else if(pid == 0){
+            if(execvp(word[0], word) < 0){
+                perror("Exec Failed");
+                free(input);
+                exit(1);
+            }
+            exit(0);
+        }
+        else{ //FIX ME not sure if this is where it goes
+            waitpid(-1, &status, 0 );
+            
+            /* Get the child usage. */
+            getrusage(RUSAGE_CHILDREN, &use);
+
+            /* Calculate the time. */
+            time = use.ru_utime.tv_usec - totalt;
+            totalt = use.ru_utime.tv_usec;
+            printf("Time taken (microseconds): %ld\n", time);
+
+            sw = use.ru_nivcsw - totalsw;
+            totalsw = use.ru_nivcsw;
+            printf("Switches: %ld\n", sw); 
+        }
+        free(input);
+    }
+    return 0;
 }
