@@ -16,27 +16,29 @@
 #include <sys/resource.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <sys/time.h>
 
 
 int main(int argc, char* argv[]) {
     pid_t pid;
-    //char input[32];
     char *input = (char*) malloc (32 * sizeof(char));
     char* word[16];
     char* buf;
     int i, j, status;
     struct rusage use;
-    long totalsw, sw, totalt, time;
+    struct timeval time, totalt;
+    long totalsw, sw;
     static char *line_read = (char *)NULL;
     totalsw =0;
-    totalt = 0;
+    totalt.tv_usec = 0;
+    totalt.tv_sec = 0;
     
     /* Bind tab to autocomplete. */
     rl_bind_key('\t', rl_complete);
     
     while(1) {
         
-        /* Make sure it is not alread allocated. */
+        /* Make sure it is not already allocated. */
         if (line_read) {
             free (line_read);
             line_read = (char *)NULL;
@@ -87,9 +89,9 @@ int main(int argc, char* argv[]) {
             getrusage(RUSAGE_CHILDREN, &use);
 
             /* Calculate the time. */
-            time = use.ru_utime.tv_usec - totalt;
-            totalt = use.ru_utime.tv_usec;
-            printf("Time taken (microseconds): %ld\n", time);
+            timersub(&use.ru_utime, &totalt, &time);
+	    totalt = use.ru_utime;
+            printf("Time taken: %ld.%06ld\n", time.tv_sec, time.tv_usec);
 
             sw = use.ru_nivcsw - totalsw;
             totalsw = use.ru_nivcsw;
@@ -97,5 +99,6 @@ int main(int argc, char* argv[]) {
         }
         free(input);
     }
+    free(input);
     return 0;
 }
