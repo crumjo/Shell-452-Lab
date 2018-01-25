@@ -80,6 +80,7 @@ int main(int argc, char* argv[]) {
                 free(input);
                 exit(1);
             }
+            free(input);
             exit(0);
         }
         else{ //FIX ME not sure if this is where it goes
@@ -90,14 +91,13 @@ int main(int argc, char* argv[]) {
 
             /* Calculate the time. */
             timersub(&use.ru_utime, &totalt, &time);
-	    totalt = use.ru_utime;
-            printf("Time taken: %ld.%06ld\n", time.tv_sec, time.tv_usec);
+	        totalt = use.ru_utime;
+            printf("Time taken: %ld.%06d\n", time.tv_sec, time.tv_usec);
 
             sw = use.ru_nivcsw - totalsw;
             totalsw = use.ru_nivcsw;
             printf("Switches: %ld\n", sw); 
         }
-        free(input);
     }
     free(input);
     return 0;
